@@ -204,9 +204,13 @@ class ImageUpload {
   insert(dataUrl) {
     const imageElement = document.getElementById(this.imageId);
     if (imageElement) {
+      const quillEditor = this.quill;
       imageElement.setAttribute('src', dataUrl);
       imageElement.removeAttribute('id');
       imageElement.classList.remove(constant.IMAGE_UPLOAD_PLACEHOLDER_CLASS_NAME);
+      imageElement.onload = function () {
+        quillEditor.insertText(this.range + 1, '\n\n');
+      };
     }
   }
 
