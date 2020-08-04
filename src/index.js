@@ -141,6 +141,9 @@ class ImageUpload {
         if (uploadUrl) {
 
           const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (evt) => {
+            this.options.imageProgress(Math.round(evt.loaded / evt.total * 100));
+          }
           // init http query
           xhr.open(method, uploadUrl, true);
           // add custom headers
@@ -155,7 +158,6 @@ class ImageUpload {
             if (xhr.status === 200) {
               callbackOK(xhr.responseText, downloadUrl, this.insert.bind(this));
             } else {
-
               this.removeLoader();
               callbackKO({
                 code: xhr.status,
@@ -164,6 +166,9 @@ class ImageUpload {
               });
             }
           };
+          xhr.onabort = () => {
+            this.removeLoader();
+          }
 
           if (this.options.withCredentials) {
             xhr.withCredentials = true;
@@ -205,10 +210,12 @@ class ImageUpload {
     const imageElement = document.getElementById(this.imageId);
     if (imageElement) {
       const quillEditor = this.quill;
+      const imagePreviewLoaded = this.options.imagePreviewLoaded;
       imageElement.setAttribute('src', dataUrl);
       imageElement.removeAttribute('id');
       imageElement.classList.remove(constant.IMAGE_UPLOAD_PLACEHOLDER_CLASS_NAME);
       imageElement.onload = function () {
+        imagePreviewLoaded();
         quillEditor.insertText(this.range + 1, '\n\n');
       };
     }
