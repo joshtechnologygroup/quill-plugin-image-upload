@@ -2,9 +2,7 @@ require('./ImageUploadPlaceholder.js');
 require('./style.js');
 const imageIdManger = require('./imageIdManger');
 const constant = require('./constant');
-
 class ImageUpload {
-
   /**
    * Instantiate the module given a quill instance and any options
    * @param {Quill} quill
@@ -24,7 +22,6 @@ class ImageUpload {
         .addHandler('image', this.selectLocalImage.bind(this));
     }
   }
-
   /**
    * Select local image
    */
@@ -32,11 +29,9 @@ class ImageUpload {
     const preProcessClickHandler = this.options.preProcessClick || this.preProcessClick;
     preProcessClickHandler(this.processButtonClick.bind(this));
   }
-
   preProcessClick(callback) {
     callback();
   }
-
   processButtonClick() {
     if (!this.fileHolder) {
       this.fileHolder = document.createElement("input");
@@ -45,20 +40,16 @@ class ImageUpload {
     }
     this.fileHolder.click();
   }
-
   fileChanged () {
     const preProcessInputHandler = this.options.preProcessInput || this.preProcessInput;
     preProcessInputHandler(this.fileHolder, this.handleFileInput.bind(this));
   };
-
   preProcessInput(input, callback) {
     callback(input);
   }
-
   handleFileInput(input) {
     const file = input.files[0];
     input.value = '';
-
     // file type is only image.
     if (/^image\//.test(file.type)) {
       const checkBeforeSend =
@@ -70,7 +61,6 @@ class ImageUpload {
       }
     }
   }
-
   showLoader(file, callback) {
     this.range = this.quill.getSelection();
     this.imageId = imageIdManger.generate();
@@ -89,14 +79,12 @@ class ImageUpload {
       }
     }
   }
-
   removeLoader() {
     const imageElement = document.getElementById(this.imageId);
     if (imageElement) {
       imageElement.remove();
     }
   }
-
   /**
    * Check file before sending to the server
    * @param {File} file
@@ -105,7 +93,6 @@ class ImageUpload {
   checkBeforeSend(file, next, failureCb) {
     next(file);
   }
-
   /**
    * Generates request url for sending to the server
    * @param {File} file
@@ -117,8 +104,6 @@ class ImageUpload {
       downloadUrl: this.options.downloadUrl
     });
   }
-
-
   /**
    * Send to server
    * @param {File} file
@@ -137,12 +122,37 @@ class ImageUpload {
       const callbackKO = this.options.callbackKO || this.uploadImageCallbackKO.bind(this);
       generateFileUploadDownloadUrls(file, (urls) => {
         const uploadUrl = urls.uploadUrl, downloadUrl = urls.downloadUrl;
-
         if (uploadUrl) {
-
           const xhr = new XMLHttpRequest();
+          xhr.timeout = this.options.requestTimeout || 120000;
           xhr.upload.onprogress = (evt) => {
-            this.options.imageProgress(Math.round(evt.loaded / evt.total * 100));
+            if(evt.lengthComputable) {
+              this.options.imageProgress(Math.round(evt.loaded / evt.total * 100));
+            }
+          }
+          xhr.upload.onerror = () => {
+            this.options.setErrorMsg("Something went wrong.");
+            callbackKO({
+              code: xhr.status,
+              type: xhr.statusText,
+              body: xhr.responseText
+            });
+          }
+          xhr.ontimeout = () => {
+            this.options.setErrorMsg("Request timeout error.");
+            callbackKO({
+              code: xhr.status,
+              type: xhr.statusText,
+              body: xhr.responseText
+            });
+          }
+          xhr.onerror = () => {
+            this.options.setErrorMsg("Something went wrong.");
+            callbackKO({
+              code: xhr.status,
+              type: xhr.statusText,
+              body: xhr.responseText
+            });
           }
           // init http query
           xhr.open(method, uploadUrl, true);
@@ -152,7 +162,6 @@ class ImageUpload {
               xhr.setRequestHeader(index, headers[index]);
             }
           }
-
           // listen callback
           xhr.onload = () => {
             if (xhr.status === 200) {
@@ -169,29 +178,23 @@ class ImageUpload {
           xhr.onabort = () => {
             this.removeLoader();
           }
-
           if (this.options.withCredentials) {
             xhr.withCredentials = true;
           }
-
-
           xhr.send(file);
           if (this.options.returnXhr) {
             this.options.returnXhr(xhr);
           }
         } else {
           const reader = new FileReader();
-
           reader.onload = event => {
             callbackOK(event.target.result, null, this.insert.bind(this));
           };
-
           reader.readAsDataURL(file);
         }
       }, this.removeLoader.bind(this));
     }
   }
-
   insertBase64Image(url) {
     let index;
     if (this.range) {
@@ -201,7 +204,6 @@ class ImageUpload {
     }
     this.quill.insertEmbed(index, "imageUpload", `${this.imageId}${constant.ID_SPLIT_FLAG}${url}`, 'user');
   }
-
   /**
    * Insert the image into the document at the current cursor position
    * @param {String} dataUrl  The base64-encoded image URI
@@ -216,11 +218,10 @@ class ImageUpload {
       imageElement.classList.remove(constant.IMAGE_UPLOAD_PLACEHOLDER_CLASS_NAME);
       imageElement.onload = function () {
         imagePreviewLoaded();
-        quillEditor.insertText(this.range + 1, '\n\n');
+        quillEditor.insertText(this.range + 1, '\n\n\n');
       };
     }
   }
-
   /**
    * callback on image upload succesfull
    * @param {Any} response http response
@@ -232,7 +233,6 @@ class ImageUpload {
       next(response);
     }
   }
-
   /**
    * callback on image upload failed
    * @param {Any} error http error
@@ -242,7 +242,6 @@ class ImageUpload {
     alert(error);
   }
 }
-
 module.exports = {
   ImageUpload: ImageUpload
 };
