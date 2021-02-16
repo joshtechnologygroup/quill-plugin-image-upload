@@ -68,14 +68,18 @@ class ImageUpload {
       this.insertBase64Image(this.options.loaderFilePath);
       callback();
     } else {
-      const fileReader = new FileReader();
-      fileReader.addEventListener("load", () => {
-        let base64ImageSrc = fileReader.result;
-        this.insertBase64Image(base64ImageSrc);
+      if (this.options.embedPreview) {
+        const fileReader = new FileReader();
+        fileReader.addEventListener("load", () => {
+          let base64ImageSrc = fileReader.result;
+          this.insertBase64Image(base64ImageSrc);
+          callback();
+        }, false);
+        if (file) {
+          fileReader.readAsDataURL(file);
+        }
+      } else {
         callback();
-      }, false);
-      if (file) {
-        fileReader.readAsDataURL(file);
       }
     }
   }
