@@ -68,14 +68,22 @@ class ImageUpload {
       this.insertBase64Image(this.options.loaderFilePath);
       callback();
     } else {
-      const fileReader = new FileReader();
-      fileReader.addEventListener("load", () => {
-        let base64ImageSrc = fileReader.result;
-        this.insertBase64Image(base64ImageSrc);
+      if (this.options.embedPreview) {
+        const fileReader = new FileReader();
+        fileReader.addEventListener("load", () => {
+          let base64ImageSrc = fileReader.result;
+          this.insertBase64Image(base64ImageSrc);
+          callback();
+        }, false);
+        if (file) {
+          fileReader.readAsDataURL(file);
+        }
+      } else {
+        // We need to insert an empty image here
+        // as later we replace the URL in this img tag
+        // with the actual URL.
+        this.insertBase64Image('');
         callback();
-      }, false);
-      if (file) {
-        fileReader.readAsDataURL(file);
       }
     }
   }
