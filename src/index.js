@@ -79,6 +79,10 @@ class ImageUpload {
           fileReader.readAsDataURL(file);
         }
       } else {
+        // We need to insert an empty image here
+        // as later we replace the URL in this img tag
+        // with the actual URL.
+        this.insertBase64Image('');
         callback();
       }
     }
